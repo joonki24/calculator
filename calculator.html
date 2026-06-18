@@ -417,9 +417,25 @@
       <div class="value" id="r1-entry">—</div>
     </div>
     <div class="result-grid">
-      <div class="result-item"><div class="r-label">손절 비율</div><div class="r-value" id="r1-slp">—</div></div>
       <div class="result-item"><div class="r-label">포지션 크기</div><div class="r-value" id="r1-pos">—</div></div>
+      <div class="result-item"><div class="r-label">손절 비율</div><div class="r-value" id="r1-slp">—</div></div>
       <div class="result-item"><div class="r-label">최대 손실</div><div class="r-value loss" id="r1-loss">—</div></div>
+    </div>
+
+    <div class="rr-section">
+      <div class="rr-title">손익비별 익절 타점</div>
+
+      <div class="rr-row">
+        <div class="rr-badge">1 : 1.5</div>
+        <div class="rr-item"><div class="r-label">익절가</div><div class="r-value" id="r1-tp15">—</div></div>
+        <div class="rr-item"><div class="r-label">예상 수익</div><div class="r-value profit" id="r1-pf15">—</div></div>
+      </div>
+
+      <div class="rr-row">
+        <div class="rr-badge">1 : 3</div>
+        <div class="rr-item"><div class="r-label">익절가</div><div class="r-value" id="r1-tp3">—</div></div>
+        <div class="rr-item"><div class="r-label">예상 수익</div><div class="r-value profit" id="r1-pf3">—</div></div>
+      </div>
     </div>
   </div>
 </div>
@@ -517,10 +533,24 @@
     const entry = dir === 'LONG' ? sl / (1 - slPct) : sl / (1 + slPct);
     const pos   = seed * LEV;
 
+    // 손익비별 익절가 & 수익 계산
+    const rrs = [1.5, 3];
+    const tpPcts = rrs.map(r => slPct * r);
+    const tpPrices = tpPcts.map(p =>
+      dir === 'LONG' ? entry * (1 + p) : entry * (1 - p)
+    );
+    const profits = tpPcts.map(p => pos * p);
+
     document.getElementById('r1-entry').textContent = fmtPrice(entry);
     document.getElementById('r1-slp').textContent   = (slPct*100).toFixed(4) + '%';
     document.getElementById('r1-pos').textContent   = fmt(pos);
     document.getElementById('r1-loss').textContent  = '-' + fmt(risk);
+
+    document.getElementById('r1-tp15').textContent = fmtPrice(tpPrices[0]);
+    document.getElementById('r1-pf15').textContent = '+' + fmt(profits[0]);
+    document.getElementById('r1-tp3').textContent  = fmtPrice(tpPrices[1]);
+    document.getElementById('r1-pf3').textContent  = '+' + fmt(profits[1]);
+
     document.getElementById('res1').classList.add('show');
   }
 
