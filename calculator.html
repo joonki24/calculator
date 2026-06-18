@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>레버리지 계산기</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0B0D14;
+    --surface: #13151F;
+    --border: #1E2130;
+    --text: #E2E4EE;
+    --dim: #565A78;
+    --long: #00D4A0;
+    --short: #FF5252;
+    --long-dim: rgba(0,212,160,0.12);
+    --short-dim: rgba(255,82,82,0.12);
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Inter', sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px 48px;
+  }
+
+  header {
+    width: 100%;
+    max-width: 420px;
+    margin-bottom: 24px;
+    text-align: center;
+  }
+
+  header h1 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--text);
+  }
+
+  header p {
+    font-size: 12px;
+    color: var(--dim);
+    margin-top: 4px;
+  }
+
+  .tabs {
+    display: flex;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 4px;
+    width: 100%;
+    max-width: 420px;
+    margin-bottom: 20px;
+  }
+
+  .tab {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--dim);
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.18s;
+  }
+
+  .tab.active {
+    background: var(--border);
+    color: var(--text);
+  }
+
+  .card {
+    width: 100%;
+    max-width: 420px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 14px;
+  }
+
+  .dir-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .dir-btn {
+    flex: 1;
+    padding: 11px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: transparent;
+    color: var(--dim);
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: all 0.18s;
+  }
+
+  .dir-btn.long.active {
+    background: var(--long-dim);
+    border-color: var(--long);
+    color: var(--long);
+  }
+
+  .dir-btn.short.active {
+    background: var(--short-dim);
+    border-color: var(--short);
+    color: var(--short);
+  }
+
+  .field {
+    margin-bottom: 12px;
+  }
+
+  .field:last-child { margin-bottom: 0; }
+
+  .field label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--dim);
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .field input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 15px;
+    outline: none;
+    transition: border-color 0.15s;
+    -webkit-appearance: none;
+  }
+
+  .field input:focus { border-color: #3A3D5C; }
+  .field input::placeholder { color: var(--dim); }
+
+  .lev-badge {
+    display: inline-block;
+    background: rgba(255,200,0,0.1);
+    border: 1px solid rgba(255,200,0,0.25);
+    color: #FFC800;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 6px;
+    margin-bottom: 14px;
+    letter-spacing: 0.5px;
+  }
+
+  .calc-btn {
+    width: 100%;
+    max-width: 420px;
+    padding: 16px;
+    border: none;
+    border-radius: 12px;
+    background: var(--long);
+    color: #0B0D14;
+    font-family: var(--sans);
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.3px;
+    transition: opacity 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .calc-btn:active { opacity: 0.8; }
+
+  .result-card {
+    width: 100%;
+    max-width: 420px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    margin-top: 14px;
+    display: none;
+  }
+
+  .result-card.show { display: block; }
+
+  .result-main {
+    text-align: center;
+    padding-bottom: 16px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .result-main .label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--dim);
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .result-main .value {
+    font-family: var(--mono);
+    font-size: 32px;
+    font-weight: 600;
+    color: var(--long);
+    letter-spacing: -1px;
+  }
+
+  .result-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .result-item {
+    background: var(--bg);
+    border-radius: 10px;
+    padding: 12px;
+  }
+
+  .result-item.full {
+    grid-column: 1 / -1;
+  }
+
+  .result-item .r-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--dim);
+    letter-spacing: 0.7px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .result-item .r-value {
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .r-value.loss { color: var(--short); }
+  .r-value.profit { color: var(--long); }
+
+  /* 손익비 섹션 */
+  .rr-section {
+    margin-top: 14px;
+  }
+
+  .rr-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--dim);
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .rr-row {
+    display: grid;
+    grid-template-columns: 60px 1fr 1fr;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .rr-badge {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--long);
+    background: var(--long-dim);
+    border: 1px solid rgba(0,212,160,0.25);
+    border-radius: 6px;
+    padding: 4px 6px;
+    text-align: center;
+    letter-spacing: 0.3px;
+  }
+
+  .rr-item {
+    background: var(--bg);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+
+  .rr-item .r-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--dim);
+    letter-spacing: 0.7px;
+    text-transform: uppercase;
+    margin-bottom: 3px;
+  }
+
+  .rr-item .r-value {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .error {
+    background: rgba(255,82,82,0.1);
+    border: 1px solid rgba(255,82,82,0.3);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 13px;
+    color: var(--short);
+    margin-top: 12px;
+    display: none;
+  }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>레버리지 계산기</h1>
+  <p>코인 선물 포지션 계산</p>
+</header>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab(0)">배율 계산</button>
+  <button class="tab" onclick="switchTab(1)">진입가 계산</button>
+</div>
+
+<!-- ── 패널 1: 배율 계산 ── -->
+<div class="panel active" id="panel0">
+  <div class="card">
+    <div class="dir-row">
+      <button class="dir-btn long active" id="dir0-long" onclick="setDir(0,'LONG')">LONG</button>
+      <button class="dir-btn short" id="dir0-short" onclick="setDir(0,'SHORT')">SHORT</button>
+    </div>
+    <div class="field"><label>운용 시드 ($)</label><input id="p0-seed" type="number" placeholder="10000" inputmode="decimal"></div>
+    <div class="field"><label>리스크 ($)</label><input id="p0-risk" type="number" placeholder="100" inputmode="decimal"></div>
+    <div class="field"><label>진입가</label><input id="p0-entry" type="number" placeholder="0" inputmode="decimal"></div>
+    <div class="field"><label>손절가</label><input id="p0-sl" type="number" placeholder="0" inputmode="decimal"></div>
+  </div>
+
+  <button class="calc-btn" onclick="calc0()">계산하기</button>
+  <div class="error" id="err0"></div>
+
+  <div class="result-card" id="res0">
+    <div class="result-main">
+      <div class="label">레버리지</div>
+      <div class="value" id="r0-lev">—</div>
+    </div>
+    <div class="result-grid">
+      <div class="result-item"><div class="r-label">포지션 크기</div><div class="r-value" id="r0-pos">—</div></div>
+      <div class="result-item"><div class="r-label">손절 비율</div><div class="r-value" id="r0-slp">—</div></div>
+      <div class="result-item"><div class="r-label">최대 손실</div><div class="r-value loss" id="r0-loss">—</div></div>
+    </div>
+
+    <!-- 손익비별 익절가 -->
+    <div class="rr-section">
+      <div class="rr-title">손익비별 익절 타점</div>
+
+      <div class="rr-row">
+        <div class="rr-badge">1 : 1.5</div>
+        <div class="rr-item"><div class="r-label">익절가</div><div class="r-value" id="r0-tp15">—</div></div>
+        <div class="rr-item"><div class="r-label">예상 수익</div><div class="r-value profit" id="r0-pf15">—</div></div>
+      </div>
+
+      <div class="rr-row">
+        <div class="rr-badge">1 : 3</div>
+        <div class="rr-item"><div class="r-label">익절가</div><div class="r-value" id="r0-tp3">—</div></div>
+        <div class="rr-item"><div class="r-label">예상 수익</div><div class="r-value profit" id="r0-pf3">—</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 패널 2: 진입가 계산 ── -->
+<div class="panel" id="panel1">
+  <div class="card">
+    <div class="lev-badge">레버리지 100x 고정</div>
+    <div class="dir-row">
+      <button class="dir-btn long active" id="dir1-long" onclick="setDir(1,'LONG')">LONG</button>
+      <button class="dir-btn short" id="dir1-short" onclick="setDir(1,'SHORT')">SHORT</button>
+    </div>
+    <div class="field"><label>운용 시드 ($)</label><input id="p1-seed" type="number" placeholder="10000" inputmode="decimal"></div>
+    <div class="field"><label>리스크 ($)</label><input id="p1-risk" type="number" placeholder="100" inputmode="decimal"></div>
+    <div class="field"><label>손절가</label><input id="p1-sl" type="number" placeholder="0" inputmode="decimal"></div>
+  </div>
+
+  <button class="calc-btn" onclick="calc1()">계산하기</button>
+  <div class="error" id="err1"></div>
+
+  <div class="result-card" id="res1">
+    <div class="result-main">
+      <div class="label">진입가</div>
+      <div class="value" id="r1-entry">—</div>
+    </div>
+    <div class="result-grid">
+      <div class="result-item"><div class="r-label">손절 비율</div><div class="r-value" id="r1-slp">—</div></div>
+      <div class="result-item"><div class="r-label">포지션 크기</div><div class="r-value" id="r1-pos">—</div></div>
+      <div class="result-item"><div class="r-label">최대 손실</div><div class="r-value loss" id="r1-loss">—</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const dirs = { 0: 'LONG', 1: 'LONG' };
+
+  function switchTab(i) {
+    document.querySelectorAll('.tab').forEach((t, idx) => t.classList.toggle('active', idx === i));
+    document.querySelectorAll('.panel').forEach((p, idx) => p.classList.toggle('active', idx === i));
+  }
+
+  function setDir(panel, dir) {
+    dirs[panel] = dir;
+    ['long','short'].forEach(d => {
+      const btn = document.getElementById(`dir${panel}-${d}`);
+      btn.className = `dir-btn ${d}` + (d === dir.toLowerCase() ? ' active' : '');
+    });
+  }
+
+  function showError(id, msg) {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.style.display = 'block';
+    setTimeout(() => el.style.display = 'none', 3000);
+  }
+
+  function fmt(n, digits=2) {
+    return '$' + n.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+  }
+
+  function fmtPrice(n) {
+    // 소수점 자리수를 가격 크기에 따라 자동 조정
+    if (n >= 1000) return fmt(n, 2);
+    if (n >= 1)    return fmt(n, 4);
+    return fmt(n, 6);
+  }
+
+  function calc0() {
+    const seed  = parseFloat(document.getElementById('p0-seed').value);
+    const risk  = parseFloat(document.getElementById('p0-risk').value);
+    const entry = parseFloat(document.getElementById('p0-entry').value);
+    const sl    = parseFloat(document.getElementById('p0-sl').value);
+    const dir   = dirs[0];
+
+    if ([seed,risk,entry,sl].some(v => isNaN(v) || v <= 0))
+      return showError('err0', '모든 값을 올바르게 입력해주세요.');
+
+    let slPct;
+    if (dir === 'LONG') {
+      if (sl >= entry) return showError('err0', '롱: 손절가는 진입가보다 낮아야 합니다.');
+      slPct = (entry - sl) / entry;
+    } else {
+      if (sl <= entry) return showError('err0', '숏: 손절가는 진입가보다 높아야 합니다.');
+      slPct = (sl - entry) / entry;
+    }
+
+    const lev = risk / (seed * slPct);
+    const pos = seed * lev;
+
+    // 손익비별 익절가 & 수익 계산
+    const rrs = [1.5, 3];
+    const tpPcts = rrs.map(r => slPct * r);
+    const tpPrices = tpPcts.map(p =>
+      dir === 'LONG' ? entry * (1 + p) : entry * (1 - p)
+    );
+    const profits = tpPcts.map(p => pos * p);
+
+    document.getElementById('r0-lev').textContent  = lev.toFixed(2) + 'x';
+    document.getElementById('r0-pos').textContent  = fmt(pos);
+    document.getElementById('r0-slp').textContent  = (slPct*100).toFixed(4) + '%';
+    document.getElementById('r0-loss').textContent = '-' + fmt(risk);
+
+    document.getElementById('r0-tp15').textContent = fmtPrice(tpPrices[0]);
+    document.getElementById('r0-pf15').textContent = '+' + fmt(profits[0]);
+    document.getElementById('r0-tp3').textContent  = fmtPrice(tpPrices[1]);
+    document.getElementById('r0-pf3').textContent  = '+' + fmt(profits[1]);
+
+    document.getElementById('res0').classList.add('show');
+  }
+
+  function calc1() {
+    const seed = parseFloat(document.getElementById('p1-seed').value);
+    const risk = parseFloat(document.getElementById('p1-risk').value);
+    const sl   = parseFloat(document.getElementById('p1-sl').value);
+    const dir  = dirs[1];
+    const LEV  = 100;
+
+    if ([seed,risk,sl].some(v => isNaN(v) || v <= 0))
+      return showError('err1', '모든 값을 올바르게 입력해주세요.');
+    if (risk > seed)
+      return showError('err1', '리스크는 시드보다 클 수 없습니다.');
+
+    const slPct = risk / (seed * LEV);
+    const entry = dir === 'LONG' ? sl / (1 - slPct) : sl / (1 + slPct);
+    const pos   = seed * LEV;
+
+    document.getElementById('r1-entry').textContent = fmtPrice(entry);
+    document.getElementById('r1-slp').textContent   = (slPct*100).toFixed(4) + '%';
+    document.getElementById('r1-pos').textContent   = fmt(pos);
+    document.getElementById('r1-loss').textContent  = '-' + fmt(risk);
+    document.getElementById('res1').classList.add('show');
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const activePanel = document.querySelector('.panel.active');
+      if (activePanel.id === 'panel0') calc0();
+      else calc1();
+    }
+  });
+</script>
+</body>
+</html>
