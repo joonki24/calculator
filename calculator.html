@@ -398,13 +398,13 @@
 <!-- ── 패널 2: 진입가 계산 ── -->
 <div class="panel" id="panel1">
   <div class="card">
-    <div class="lev-badge">레버리지 100x 고정</div>
     <div class="dir-row">
       <button class="dir-btn long active" id="dir1-long" onclick="setDir(1,'LONG')">LONG</button>
       <button class="dir-btn short" id="dir1-short" onclick="setDir(1,'SHORT')">SHORT</button>
     </div>
     <div class="field"><label>운용 시드 ($)</label><input id="p1-seed" type="number" placeholder="10000" inputmode="decimal"></div>
     <div class="field"><label>리스크 ($)</label><input id="p1-risk" type="number" placeholder="100" inputmode="decimal"></div>
+    <div class="field"><label>레버리지 (x)</label><input id="p1-lev" type="number" placeholder="100" inputmode="decimal"></div>
     <div class="field"><label>손절가</label><input id="p1-sl" type="number" placeholder="0" inputmode="decimal"></div>
   </div>
 
@@ -520,18 +520,22 @@
   function calc1() {
     const seed = parseFloat(document.getElementById('p1-seed').value);
     const risk = parseFloat(document.getElementById('p1-risk').value);
+    const lev  = parseFloat(document.getElementById('p1-lev').value);
     const sl   = parseFloat(document.getElementById('p1-sl').value);
     const dir  = dirs[1];
-    const LEV  = 100;
 
-    if ([seed,risk,sl].some(v => isNaN(v) || v <= 0))
+    if ([seed,risk,lev,sl].some(v => isNaN(v) || v <= 0))
       return showError('err1', '모든 값을 올바르게 입력해주세요.');
     if (risk > seed)
       return showError('err1', '리스크는 시드보다 클 수 없습니다.');
 
-    const slPct = risk / (seed * LEV);
+    const slPct = risk / (seed * lev);
+
+    if (slPct >= 1 / lev)
+      return showError('err1', '손절 비율이 청산 비율을 초과합니다. 레버리지를 낮추거나 리스크를 줄이세요.');
+
     const entry = dir === 'LONG' ? sl / (1 - slPct) : sl / (1 + slPct);
-    const pos   = seed * LEV;
+    const pos   = seed * lev;
 
     // 손익비별 익절가 & 수익 계산
     const rrs = [1.5, 3];
